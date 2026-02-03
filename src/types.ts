@@ -23,6 +23,8 @@ export type FeishuMessageContext = {
   senderId: string;
   senderOpenId: string;
   senderName?: string;
+  leaderOpenId?: string;
+  departmentId?: string;
   chatType: "p2p" | "group";
   mentionedBot: boolean;
   rootId?: string;
@@ -60,4 +62,7 @@ export type FeishuToolsConfig = {
   drive?: boolean;
   perm?: boolean;
   scopes?: boolean;
+  calendar?: boolean;
+  contact?: boolean;
+  vc?: boolean;
 };

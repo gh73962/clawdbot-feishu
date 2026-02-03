@@ -10,19 +10,6 @@
     "skills",
     "openclaw.plugin.json"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/m1heng/clawdbot-feishu.git"
-  },
-  "keywords": [
-    "openclaw",
-    "feishu",
-    "lark",
-    "飞书",
-    "chatbot",
-    "ai",
-    "claude"
-  ],
   "openclaw": {
     "extensions": [
       "./index.ts"

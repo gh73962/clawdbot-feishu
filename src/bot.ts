@@ -1,28 +1,28 @@
 import type { ClawdbotConfig, RuntimeEnv } from "openclaw/plugin-sdk";
 import {
   buildPendingHistoryContextFromMap,
-  recordPendingHistoryEntryIfEnabled,
   clearHistoryEntriesIfEnabled,
   DEFAULT_GROUP_HISTORY_LIMIT,
+  recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
 } from "openclaw/plugin-sdk";
-import type { FeishuConfig, FeishuMessageContext, FeishuMediaInfo } from "./types.js";
-import { getFeishuRuntime } from "./runtime.js";
 import { createFeishuClient } from "./client.js";
-import {
-  resolveFeishuGroupConfig,
-  resolveFeishuReplyPolicy,
-  resolveFeishuAllowlistMatch,
-  isFeishuGroupAllowed,
-} from "./policy.js";
-import { createFeishuReplyDispatcher } from "./reply-dispatcher.js";
-import { getMessageFeishu } from "./send.js";
-import { downloadImageFeishu, downloadMessageResourceFeishu } from "./media.js";
+import { downloadMessageResourceFeishu } from "./media.js";
 import {
   extractMentionTargets,
   extractMessageBody,
   isMentionForwardRequest,
 } from "./mention.js";
+import {
+  isFeishuGroupAllowed,
+  resolveFeishuAllowlistMatch,
+  resolveFeishuGroupConfig,
+  resolveFeishuReplyPolicy,
+} from "./policy.js";
+import { createFeishuReplyDispatcher } from "./reply-dispatcher.js";
+import { getFeishuRuntime } from "./runtime.js";
+import { getMessageFeishu } from "./send.js";
+import type { FeishuConfig, FeishuMediaInfo, FeishuMessageContext } from "./types.js";
 
 // --- Permission error extraction ---
 // Extract permission grant URL from Feishu API error response.
@@ -63,8 +63,15 @@ function extractPermissionError(err: unknown): PermissionError | null {
 
 // --- Sender name resolution (so the agent can distinguish who is speaking in group chats) ---
 // Cache display names by open_id to avoid an API call on every message.
-const SENDER_NAME_TTL_MS = 10 * 60 * 1000;
-const senderNameCache = new Map<string, { name: string; expireAt: number }>();
+const SENDER_INFO_TTL_MS = 10 * 60 * 1000;
+type CachedSenderInfo = {
+  name: string;
+  openId: string;
+  departmentId: string;
+  leaderOpenId: string;
+  expireAt: number;
+};
+const senderInfoCache = new Map<string, CachedSenderInfo>();
 
 // Cache permission errors to avoid spamming the user with repeated notifications.
 // Key: appId or "default", Value: timestamp of last notification
@@ -73,6 +80,9 @@ const PERMISSION_ERROR_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 type SenderNameResult = {
   name?: string;
+  openId?: string;
+  departmentId?: string;
+  leaderOpenId?: string;
   permissionError?: PermissionError;
 };
 
@@ -85,9 +95,16 @@ async function resolveFeishuSenderName(params: {
   if (!feishuCfg) return {};
   if (!senderOpenId) return {};
 
-  const cached = senderNameCache.get(senderOpenId);
+  const cached = senderInfoCache.get(senderOpenId);
   const now = Date.now();
-  if (cached && cached.expireAt > now) return { name: cached.name };
+  if (cached && cached.expireAt > now) {
+    return {
+      name: cached.name,
+      openId: cached.openId,
+      departmentId: cached.departmentId,
+      leaderOpenId: cached.leaderOpenId,
+    };
+  }
 
   try {
     const client = createFeishuClient(feishuCfg);
@@ -98,18 +115,24 @@ async function resolveFeishuSenderName(params: {
       params: { user_id_type: "open_id" },
     });
 
-    const name: string | undefined =
-      res?.data?.user?.name ||
-      res?.data?.user?.display_name ||
-      res?.data?.user?.nickname ||
-      res?.data?.user?.en_name;
+    const user = res?.data?.user;
+    if (!user) return {};
 
-    if (name && typeof name === "string") {
-      senderNameCache.set(senderOpenId, { name, expireAt: now + SENDER_NAME_TTL_MS });
-      return { name };
-    }
+    const info: CachedSenderInfo = {
+      departmentId: user.department_ids?.[0] ?? "",
+      leaderOpenId: user.leader_user_id ?? "",
+      name: user.name ?? user.display_name ?? user.nickname ?? user.en_name ?? "",
+      openId: user.open_id ?? senderOpenId,
+      expireAt: now + SENDER_INFO_TTL_MS,
+    };
 
-    return {};
+    senderInfoCache.set(senderOpenId, info);
+    return {
+      name: info.name,
+      openId: info.openId,
+      departmentId: info.departmentId,
+      leaderOpenId: info.leaderOpenId,
+    };
   } catch (err) {
     // Check if this is a permission error
     const permErr = extractPermissionError(err);
@@ -506,7 +529,12 @@ export async function handleFeishuMessage(params: {
     senderOpenId: ctx.senderOpenId,
     log,
   });
-  if (senderResult.name) ctx = { ...ctx, senderName: senderResult.name };
+  if (senderResult.name) ctx = {
+    ...ctx,
+    senderName: senderResult.name,
+    leaderOpenId: senderResult.leaderOpenId,
+    departmentId: senderResult.departmentId,
+  };
 
   // Track permission error to inform agent later (with cooldown to avoid repetition)
   let permissionErrorForAgent: PermissionError | undefined;
@@ -521,7 +549,7 @@ export async function handleFeishuMessage(params: {
     }
   }
 
-  log(`feishu: received message from ${ctx.senderOpenId} in ${ctx.chatId} (${ctx.chatType})`);
+  log(`feishu: received message from ${ctx.senderName} ${ctx.senderOpenId} in ${ctx.chatId} (${ctx.chatType})`);
 
   // Log mention targets if detected
   if (ctx.mentionTargets && ctx.mentionTargets.length > 0) {
@@ -670,7 +698,14 @@ export async function handleFeishuMessage(params: {
     // Include a readable speaker label so the model can attribute instructions.
     // (DMs already have per-sender sessions, but the prefix is still useful for clarity.)
     const speaker = ctx.senderName ?? ctx.senderOpenId;
-    messageBody = `${speaker}: ${messageBody}`;
+    const senderMeta = [
+      `openId:${ctx.senderOpenId}`,
+      ctx.leaderOpenId && `leaderOpenId:${ctx.leaderOpenId}`,
+      ctx.departmentId && `departmentId:${ctx.departmentId}`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+    messageBody = `${speaker}: ${senderMeta}\n${messageBody}`;
 
     // If there are mention targets, inform the agent that replies will auto-mention them
     if (ctx.mentionTargets && ctx.mentionTargets.length > 0) {
