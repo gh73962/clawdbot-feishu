@@ -69,6 +69,7 @@ type CachedSenderInfo = {
   openId: string;
   departmentId: string;
   leaderOpenId: string;
+  jobTitle: string;
   expireAt: number;
 };
 const senderInfoCache = new Map<string, CachedSenderInfo>();
@@ -83,6 +84,7 @@ type SenderNameResult = {
   openId?: string;
   departmentId?: string;
   leaderOpenId?: string;
+  jobTitle?: string;
   permissionError?: PermissionError;
 };
 
@@ -103,6 +105,7 @@ async function resolveFeishuSenderName(params: {
       openId: cached.openId,
       departmentId: cached.departmentId,
       leaderOpenId: cached.leaderOpenId,
+      jobTitle: cached.jobTitle,
     };
   }
 
@@ -112,7 +115,10 @@ async function resolveFeishuSenderName(params: {
     // contact/v3/users/:user_id?user_id_type=open_id
     const res: any = await client.contact.user.get({
       path: { user_id: senderOpenId },
-      params: { user_id_type: "open_id" },
+      params: {
+        user_id_type: "open_id",
+        department_id_type: "open_department_id",
+      },
     });
 
     const user = res?.data?.user;
@@ -123,6 +129,7 @@ async function resolveFeishuSenderName(params: {
       leaderOpenId: user.leader_user_id ?? "",
       name: user.name ?? user.display_name ?? user.nickname ?? user.en_name ?? "",
       openId: user.open_id ?? senderOpenId,
+      jobTitle: user.job_title ?? "",
       expireAt: now + SENDER_INFO_TTL_MS,
     };
 
@@ -132,6 +139,7 @@ async function resolveFeishuSenderName(params: {
       openId: info.openId,
       departmentId: info.departmentId,
       leaderOpenId: info.leaderOpenId,
+      jobTitle: info.jobTitle,
     };
   } catch (err) {
     // Check if this is a permission error
@@ -529,12 +537,20 @@ export async function handleFeishuMessage(params: {
     senderOpenId: ctx.senderOpenId,
     log,
   });
-  if (senderResult.name) ctx = {
-    ...ctx,
-    senderName: senderResult.name,
-    leaderOpenId: senderResult.leaderOpenId,
-    departmentId: senderResult.departmentId,
-  };
+  if (
+    senderResult.name ||
+    senderResult.leaderOpenId ||
+    senderResult.departmentId ||
+    senderResult.jobTitle
+  ) {
+    ctx = {
+      ...ctx,
+      senderName: senderResult.name ?? ctx.senderName,
+      leaderOpenId: senderResult.leaderOpenId ?? ctx.leaderOpenId,
+      departmentId: senderResult.departmentId ?? ctx.departmentId,
+      senderJobTitle: senderResult.jobTitle ?? ctx.senderJobTitle,
+    };
+  }
 
   // Track permission error to inform agent later (with cooldown to avoid repetition)
   let permissionErrorForAgent: PermissionError | undefined;
@@ -702,6 +718,7 @@ export async function handleFeishuMessage(params: {
       `openId:${ctx.senderOpenId}`,
       ctx.leaderOpenId && `leaderOpenId:${ctx.leaderOpenId}`,
       ctx.departmentId && `departmentId:${ctx.departmentId}`,
+      ctx.senderJobTitle && `jobTitle:${ctx.senderJobTitle}`,
     ]
       .filter(Boolean)
       .join(" ");

@@ -23,6 +23,7 @@ export type FeishuMessageContext = {
   senderId: string;
   senderOpenId: string;
   senderName?: string;
+  senderJobTitle?: string;
   leaderOpenId?: string;
   departmentId?: string;
   chatType: "p2p" | "group";
