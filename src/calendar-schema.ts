@@ -45,19 +45,25 @@ const CalendarCreateSchema = Type.Object({
   description: Type.Optional(Type.String({ description: "Event description" })),
   start_time: TimeSchema,
   end_time: TimeSchema,
+  vchat: Type.Optional(
+    Type.Object({
+      vc_type: Type.Optional(
+        Type.Union([
+          Type.Literal("vc"),
+          Type.Literal("third_party"),
+          Type.Literal("no_meeting"),
+          Type.Literal("lark_live"),
+          Type.Literal("unknown"),
+          Type.Literal("third_party_meeting"),
+        ]),
+      ),
+    }),
+  ),
   need_notification: Type.Optional(
     Type.Boolean({ description: "Whether to send notifications to attendees" }),
   ),
   visibility: Type.Optional(
     Type.Union([Type.Literal("default"), Type.Literal("public"), Type.Literal("private")]),
-  ),
-  attendee_ability: Type.Optional(
-    Type.Union([
-      Type.Literal("none"),
-      Type.Literal("can_see_others"),
-      Type.Literal("can_invite_others"),
-      Type.Literal("can_modify_event"),
-    ]),
   ),
   free_busy_status: Type.Optional(Type.Union([Type.Literal("busy"), Type.Literal("free")])),
   location: Type.Optional(

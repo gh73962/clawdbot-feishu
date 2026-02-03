@@ -44,11 +44,12 @@ async function createEvent(client: Lark.Client, params: CreateEventParams) {
     data: {
       summary: params.summary,
       description: params.description,
+      vchat: params.vchat,
       need_notification: params.need_notification,
       start_time: params.start_time,
       end_time: params.end_time,
       visibility: params.visibility,
-      attendee_ability: params.attendee_ability,
+      attendee_ability: "can_modify_event",
       free_busy_status: params.free_busy_status,
       location: params.location,
       reminders: params.reminders,
