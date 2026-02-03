@@ -24,6 +24,22 @@ Notes:
 - Requires tenant access token (app identity)
 - `user_id_type` affects `contact_ids` field in response
 
+### List Rooms
+
+```json
+{
+  "action": "list_rooms",
+  "room_level_id": "omb_4ad1a2c7a2fbc5fc9570f38456931293",
+  "page_size": 10,
+  "page_token": "50",
+  "user_id_type": "open_id"
+}
+```
+
+Notes:
+- `room_level_id` omitted = list all rooms under tenant
+- `page_size` max 100; use `page_token` for pagination
+
 ## Configuration
 
 ```yaml
