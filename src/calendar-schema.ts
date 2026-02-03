@@ -103,9 +103,6 @@ const CalendarAddAttendeesSchema = Type.Object({
   add_operator_to_attendee: Type.Optional(
     Type.Boolean({ description: "Add room operator as attendee" }),
   ),
-  user_id_type: Type.Optional(
-    Type.Union([Type.Literal("user_id"), Type.Literal("union_id"), Type.Literal("open_id")]),
-  ),
 });
 
 const CalendarDeleteSchema = Type.Object({

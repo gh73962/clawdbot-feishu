@@ -72,9 +72,6 @@ async function createEvent(client: Lark.Client, params: CreateEventParams) {
 async function addEventAttendees(client: Lark.Client, params: AddAttendeesParams) {
   const res = await client.calendar.calendarEventAttendee.create({
     path: { calendar_id: params.calendar_id, event_id: params.event_id },
-    params: {
-      user_id_type: params.user_id_type,
-    },
     data: {
       attendees: params.attendees,
       need_notification: params.need_notification,
