@@ -9,9 +9,10 @@ description: |
 Single tool `feishu_calendar` with action-based operations for Feishu calendar events.
 
 ## Workflow (Meeting + Room Booking)
-
-1. Create the calendar event (`action: "create"`).
-2. Add attendees and meeting room (`action: "add_attendees"`, include `type: "resource"` for room).
+1. Confirm time
+2. Create the calendar event (`action: "create"`).
+3. If need meeting room , Add attendees and meeting room (`action: "add_attendees"`, include `type: "resource"` for room).
+4. if need invite chat group, you must in chat group; if you not in chat group, you cannot add the group as a participant. You need to fetch the member list and add participants individually.
 
 ## Actions
 
