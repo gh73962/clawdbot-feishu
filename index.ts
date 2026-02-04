@@ -48,7 +48,7 @@ export {
 export { feishuPlugin } from "./src/channel.js";
 
 const plugin = {
-  id: "feishu",
+  id: "superant",
   name: "Feishu",
   description: "Feishu/Lark channel plugin",
   configSchema: emptyPluginConfigSchema(),
