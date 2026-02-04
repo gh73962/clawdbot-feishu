@@ -8,6 +8,11 @@ description: |
 
 Single tool `feishu_calendar` with action-based operations for Feishu calendar events.
 
+## Workflow (Meeting + Room Booking)
+
+1. Create the calendar event (`action: "create"`).
+2. Add attendees and meeting room (`action: "add_attendees"`, include `type: "resource"` for room).
+
 ## Actions
 
 ### Create Event
@@ -24,7 +29,8 @@ Single tool `feishu_calendar` with action-based operations for Feishu calendar e
 ```
 
 Time rules:
-- `start_time` and `end_time` must include `timestamp` or `date`
+- use command date get timestamp
+- `start_time` and `end_time` must be `timestamp`
 - Use `date` for all-day events (YYYY-MM-DD)
 
 Full example (common fields):
@@ -64,10 +70,10 @@ Note:
   "calendar_id": "feishu.cn_xxx@group.calendar.feishu.cn",
   "event_id": "xxxxxx_0",
   "attendees": [
-    { "type": "user", "user_id": "ou_xxx"},
-    { "type": "chat", "chat_id": "oc_xxx" },
-    { "type": "resource", "room_id": "omm_xxx", "operate_id": "ou_xxx" },
-    { "type": "third_party", "third_party_email": "a@b.com" }
+    { "type": "user", "user_id": "ou_xxx"}, // 添加人员
+    { "type": "chat", "chat_id": "oc_xxx" },// 添加聊天组
+    { "type": "resource", "room_id": "omm_xxx"},// 添加会议室
+    { "type": "third_party", "third_party_email": "a@b.com" } // 外部人员
   ],
   "need_notification": true
 }
