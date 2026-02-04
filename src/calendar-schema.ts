@@ -82,10 +82,6 @@ const CalendarCreateSchema = Type.Object({
     ),
   ),
   recurrence: Type.Optional(Type.String({ description: "RRULE string for recurring events" })),
-  idempotency_key: Type.Optional(Type.String({ description: "Idempotency key" })),
-  user_id_type: Type.Optional(
-    Type.Union([Type.Literal("user_id"), Type.Literal("union_id"), Type.Literal("open_id")]),
-  ),
 });
 
 const CalendarAddAttendeesSchema = Type.Object({

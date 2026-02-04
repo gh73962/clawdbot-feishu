@@ -4,6 +4,7 @@ import type { FeishuConfig } from "./types.js";
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import { FeishuCalendarSchema, type FeishuCalendarParams } from "./calendar-schema.js";
 import { resolveToolsConfig } from "./tools-config.js";
+import { randomUUID } from "crypto";
 
 // ============ Helpers ============
 
@@ -34,12 +35,16 @@ type DeleteEventParams = Extract<FeishuCalendarParams, { action: "delete" }>;
 
 async function createEvent(client: Lark.Client, params: CreateEventParams) {
   validateTimeRange(params.start_time, params.end_time);
+  const calendarId = params.calendar_id?.trim();
+  if (!calendarId) {
+    throw new Error("calendar_id is required");
+  }
 
   const res = await client.calendar.calendarEvent.create({
-    path: { calendar_id: params.calendar_id },
+    path: { calendar_id: calendarId },
     params: {
-      idempotency_key: params.idempotency_key,
-      user_id_type: params.user_id_type,
+      idempotency_key: randomUUID(),
+      user_id_type: "open_id",
     },
     data: {
       summary: params.summary,
