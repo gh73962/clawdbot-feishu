@@ -62,6 +62,7 @@ Full example (common fields):
 Note:
 - `attendee_ability` is fixed to `can_modify_event` in code. Do not pass it in the tool call.
 - `idempotency_key` and `user_id_type` are generated internally. Do not pass them.
+- `calendar_id` must be the full ID (example: `feishu.cn_xxx@group.calendar.feishu.cn`). Do not use `primary`.
 
 ### Add Attendees
 

@@ -39,6 +39,13 @@ async function createEvent(client: Lark.Client, params: CreateEventParams) {
   if (!calendarId) {
     throw new Error("calendar_id is required");
   }
+  const calendarIdPattern =
+    /^[a-z0-9.-]+_[^@]+@group\.calendar\.(feishu|lark)\.(cn|com)$/i;
+  if (!calendarIdPattern.test(calendarId)) {
+    throw new Error(
+      "calendar_id must be a full calendar ID like feishu.cn_xxx@group.calendar.feishu.cn",
+    );
+  }
 
   const res = await client.calendar.calendarEvent.create({
     path: { calendar_id: calendarId },

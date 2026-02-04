@@ -40,7 +40,9 @@ const AttendeeSchema = Type.Object({
 
 const CalendarCreateSchema = Type.Object({
   action: Type.Literal("create"),
-  calendar_id: Type.String({ description: "Calendar ID (primary/shared)" }),
+  calendar_id: Type.String({
+    description: "Calendar ID (example: feishu.cn_xxx@group.calendar.feishu.cn)",
+  }),
   summary: Type.String({ description: "Event title" }),
   description: Type.Optional(Type.String({ description: "Event description" })),
   start_time: TimeSchema,
@@ -86,7 +88,9 @@ const CalendarCreateSchema = Type.Object({
 
 const CalendarAddAttendeesSchema = Type.Object({
   action: Type.Literal("add_attendees"),
-  calendar_id: Type.String({ description: "Calendar ID (primary/shared)" }),
+  calendar_id: Type.String({
+    description: "Calendar ID (example: feishu.cn_xxx@group.calendar.feishu.cn)",
+  }),
   event_id: Type.String({ description: "Event ID" }),
   attendees: Type.Optional(Type.Array(AttendeeSchema)),
   need_notification: Type.Optional(Type.Boolean({ description: "Whether to notify attendees" })),
@@ -103,7 +107,9 @@ const CalendarAddAttendeesSchema = Type.Object({
 
 const CalendarDeleteSchema = Type.Object({
   action: Type.Literal("delete"),
-  calendar_id: Type.String({ description: "Calendar ID (primary/shared)" }),
+  calendar_id: Type.String({
+    description: "Calendar ID (example: feishu.cn_xxx@group.calendar.feishu.cn)",
+  }),
   event_id: Type.String({ description: "Event ID" }),
   need_notification: Type.Optional(
     Type.Union([Type.Literal("true"), Type.Literal("false")]),
