@@ -1,6 +1,6 @@
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { createFeishuClient } from "./client.js";
-import { listEnabledFeishuAccounts } from "./accounts.js";
+import type { FeishuConfig } from "./types.js";
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import { FeishuDriveSchema, type FeishuDriveParams } from "./drive-schema.js";
 import { resolveToolsConfig } from "./tools-config.js";
@@ -150,25 +150,19 @@ async function deleteFile(client: Lark.Client, fileToken: string, type: string) 
 // ============ Tool Registration ============
 
 export function registerFeishuDriveTools(api: OpenClawPluginApi) {
-  if (!api.config) {
-    api.logger.debug?.("feishu_drive: No config available, skipping drive tools");
+  const feishuCfg = api.config?.channels?.feishu as FeishuConfig | undefined;
+  if (!feishuCfg?.appId || !feishuCfg?.appSecret) {
+    api.logger.debug?.("feishu_drive: Feishu credentials not configured, skipping drive tools");
     return;
   }
 
-  const accounts = listEnabledFeishuAccounts(api.config);
-  if (accounts.length === 0) {
-    api.logger.debug?.("feishu_drive: No Feishu accounts configured, skipping drive tools");
-    return;
-  }
-
-  const firstAccount = accounts[0];
-  const toolsCfg = resolveToolsConfig(firstAccount.config.tools);
+  const toolsCfg = resolveToolsConfig(feishuCfg.tools);
   if (!toolsCfg.drive) {
     api.logger.debug?.("feishu_drive: drive tool disabled in config");
     return;
   }
 
-  const getClient = () => createFeishuClient(firstAccount);
+  const getClient = () => createFeishuClient(feishuCfg);
 
   api.registerTool(
     {

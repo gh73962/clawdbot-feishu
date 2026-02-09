@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox";
 import type { OpenClawPluginApi } from "openclaw/plugin-sdk";
 import { createFeishuClient } from "./client.js";
-import { resolveFeishuAccount, listEnabledFeishuAccounts } from "./accounts.js";
+import type { FeishuConfig } from "./types.js";
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import { Readable } from "stream";
 import { FeishuDocSchema, type FeishuDocParams } from "./doc-schema.js";
@@ -388,24 +388,14 @@ async function listAppScopes(client: Lark.Client) {
 // ============ Tool Registration ============
 
 export function registerFeishuDocTools(api: OpenClawPluginApi) {
-  if (!api.config) {
-    api.logger.debug?.("feishu_doc: No config available, skipping doc tools");
+  const feishuCfg = api.config?.channels?.feishu as FeishuConfig | undefined;
+  if (!feishuCfg?.appId || !feishuCfg?.appSecret) {
+    api.logger.debug?.("feishu_doc: Feishu credentials not configured, skipping doc tools");
     return;
   }
 
-  // Check if any account is configured
-  const accounts = listEnabledFeishuAccounts(api.config);
-  if (accounts.length === 0) {
-    api.logger.debug?.("feishu_doc: No Feishu accounts configured, skipping doc tools");
-    return;
-  }
-
-  // Use first account's config for tools configuration
-  const firstAccount = accounts[0];
-  const toolsCfg = resolveToolsConfig(firstAccount.config.tools);
-  
-  // Helper to get client for the default account
-  const getClient = () => createFeishuClient(firstAccount);
+  const toolsCfg = resolveToolsConfig(feishuCfg.tools);
+  const getClient = () => createFeishuClient(feishuCfg);
   const registered: string[] = [];
 
   // Main document tool with action-based dispatch

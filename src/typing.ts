@@ -1,6 +1,6 @@
 import type { ClawdbotConfig } from "openclaw/plugin-sdk";
 import { createFeishuClient } from "./client.js";
-import { resolveFeishuAccount } from "./accounts.js";
+import type { FeishuConfig } from "./types.js";
 
 // Feishu emoji types for typing indicator
 // See: https://open.feishu.cn/document/server-docs/im-v1/message-reaction/emojis-introduce
@@ -18,15 +18,14 @@ export type TypingIndicatorState = {
 export async function addTypingIndicator(params: {
   cfg: ClawdbotConfig;
   messageId: string;
-  accountId?: string;
 }): Promise<TypingIndicatorState> {
-  const { cfg, messageId, accountId } = params;
-  const account = resolveFeishuAccount({ cfg, accountId });
-  if (!account.configured) {
+  const { cfg, messageId } = params;
+  const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
+  if (!feishuCfg) {
     return { messageId, reactionId: null };
   }
 
-  const client = createFeishuClient(account);
+  const client = createFeishuClient(feishuCfg);
 
   try {
     const response = await client.im.messageReaction.create({
@@ -51,15 +50,14 @@ export async function addTypingIndicator(params: {
 export async function removeTypingIndicator(params: {
   cfg: ClawdbotConfig;
   state: TypingIndicatorState;
-  accountId?: string;
 }): Promise<void> {
-  const { cfg, state, accountId } = params;
+  const { cfg, state } = params;
   if (!state.reactionId) return;
 
-  const account = resolveFeishuAccount({ cfg, accountId });
-  if (!account.configured) return;
+  const feishuCfg = cfg.channels?.feishu as FeishuConfig | undefined;
+  if (!feishuCfg) return;
 
-  const client = createFeishuClient(account);
+  const client = createFeishuClient(feishuCfg);
 
   try {
     await client.im.messageReaction.delete({
