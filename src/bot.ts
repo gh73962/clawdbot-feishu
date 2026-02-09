@@ -1,9 +1,9 @@
 import type { ClawdbotConfig, RuntimeEnv } from "openclaw/plugin-sdk";
 import {
   buildPendingHistoryContextFromMap,
+  recordPendingHistoryEntryIfEnabled,
   clearHistoryEntriesIfEnabled,
   DEFAULT_GROUP_HISTORY_LIMIT,
-  recordPendingHistoryEntryIfEnabled,
   type HistoryEntry,
 } from "openclaw/plugin-sdk";
 import type { FeishuConfig, FeishuMessageContext, FeishuMediaInfo, ResolvedFeishuAccount } from "./types.js";
@@ -18,7 +18,7 @@ import {
 } from "./policy.js";
 import { createFeishuReplyDispatcher } from "./reply-dispatcher.js";
 import { getMessageFeishu } from "./send.js";
-import { downloadImageFeishu, downloadMessageResourceFeishu } from "./media.js";
+import { downloadMessageResourceFeishu } from "./media.js";
 import {
   extractMentionTargets,
   extractMessageBody,
@@ -614,9 +614,7 @@ export async function handleFeishuMessage(params: {
     }
   }
 
-  log(
-    `feishu[${account.accountId}]: received message from ${ctx.senderName} ${ctx.senderOpenId} in ${ctx.chatId} (${ctx.chatType})`,
-  );
+  log(`feishu[${account.accountId}]: received message from ${ctx.senderName} ${ctx.senderOpenId} in ${ctx.chatId} (${ctx.chatType})`);
 
   // Log mention targets if detected
   if (ctx.mentionTargets && ctx.mentionTargets.length > 0) {
@@ -644,7 +642,7 @@ export async function handleFeishuMessage(params: {
     });
 
     if (!groupAllowed) {
-      log(`feishu[${account.accountId}]: sender ${ctx.senderOpenId} not in group allowlist`);
+      log(`feishu[${account.accountId}]: group ${ctx.chatId} not in allowlist`);
       return;
     }
 

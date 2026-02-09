@@ -495,6 +495,46 @@ session:
 - **权限错误提示**：当机器人遇到飞书 API 权限错误时，会自动通知用户并提供权限授权链接
 - **动态 Agent 创建**：每个私聊用户可拥有独立的 agent 实例和专属 workspace（可选）
 
+#### 动态 Agent 创建（多用户 Workspace 隔离）
+
+启用后，每个私聊用户会自动获得独立的 agent 实例和专属 workspace。这提供完整的隔离，包括独立的对话历史、记忆（MEMORY.md）和工作区文件。
+
+```yaml
+channels:
+  feishu:
+    dmPolicy: "open"
+    allowFrom: ["*"]
+    dynamicAgentCreation:
+      enabled: true
+      # workspace 目录模板 ({userId} = OpenID, {agentId} = 生成的 agent ID)
+      workspaceTemplate: "~/workspaces/feishu-{agentId}"
+      # agent 配置目录模板
+      agentDirTemplate: "~/.openclaw/agents/{agentId}/agent"
+      # 可选：限制动态 agent 总数
+      maxAgents: 100
+
+session:
+  # 同时设置 dmScope 以隔离对话历史
+  dmScope: "per-peer"
+```
+
+| 选项 | 说明 |
+|------|------|
+| `enabled` | 是否为私聊用户启用动态 agent 创建 |
+| `workspaceTemplate` | workspace 路径模板，支持 `{userId}`（OpenID）和 `{agentId}`（= `feishu-{openId}`）|
+| `agentDirTemplate` | agent 目录路径模板 |
+| `maxAgents` | 可选，限制动态 agent 的最大数量 |
+
+**工作原理：**
+1. 当新用户发送私聊时，系统在 `openclaw.json` 中创建新的 agent 条目
+2. 创建 binding 将该用户的私聊路由到专属 agent
+3. 自动创建 workspace 和 agent 目录
+4. 该用户后续的消息都会路由到其隔离的 agent
+
+**与 `dmScope: "per-peer"` 的区别：**
+- `dmScope: "per-peer"` 仅隔离对话历史
+- `dynamicAgentCreation` 提供完整隔离（workspace、记忆、身份、工具）
+
 #### @ 转发功能
 
 如果你希望机器人的回复中 @ 某人，只需在你的消息中 @ 他们：
